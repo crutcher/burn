@@ -446,7 +446,13 @@ pub trait IntTensorOps<B: Backend> {
     ///
     /// The elements of `lhs` raised to the value of `rhs`.
     fn int_powi_scalar(lhs: IntTensor<B>, rhs: IntElem<B>) -> IntTensor<B> {
-        B::float_into_int(B::float_powi_scalar(B::int_into_float(lhs), rhs))
+        let p: i32 = rhs.elem();
+
+        match p {
+            1 => lhs,
+            2 => B::int_mul(lhs.clone(), lhs),
+            _ => B::float_into_int(B::float_powi_scalar(B::int_into_float(lhs), rhs)),
+        }
     }
 
     /// Element-wise power with a floatTensor.

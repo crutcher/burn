@@ -844,13 +844,14 @@ pub trait FloatTensorOps<B: Backend> {
     ///
     /// The elements of `lhs` raised to the value of `rhs`.
     fn float_powi_scalar(lhs: FloatTensor<B>, rhs: IntElem<B>) -> FloatTensor<B> {
-        let rhs: i32 = rhs.elem();
+        let p: i32 = rhs.elem();
 
-        match rhs {
-            -1 => B::float_recip(lhs),
+        match p {
             1 => lhs,
             2 => B::float_mul(lhs.clone(), lhs),
-            val => Self::float_powf_scalar(lhs, val as f32),
+            -1 => B::float_recip(lhs),
+            -2 => B::float_recip(B::float_mul(lhs.clone(), lhs)),
+            _ => Self::float_powf_scalar(lhs, p as f32),
         }
     }
 
@@ -875,7 +876,9 @@ pub trait FloatTensorOps<B: Backend> {
     /// # Returns
     ///
     /// A tensor with the same shape as `tensor` with square root values.
-    fn float_sqrt(tensor: FloatTensor<B>) -> FloatTensor<B>;
+    fn float_sqrt(tensor: FloatTensor<B>) -> FloatTensor<B> {
+        Self::float_powf_scalar(tensor, 0.5)
+    }
 
     /// Returns a new tensor with absolute values.
     ///
