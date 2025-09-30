@@ -1,6 +1,7 @@
-use crate::{Slice, SliceArg};
+use crate::{AsIndex, Slice, SliceArg};
 use alloc::vec::Vec;
 use core::ops::Range;
+use crate::indexing::canonicalize_dim;
 
 /// Shape of a tensor.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -13,6 +14,45 @@ impl Shape {
     /// Returns the total number of elements of a tensor having this shape
     pub fn num_elements(&self) -> usize {
         self.dims.iter().product()
+    }
+
+    /// Unsqueeze the Shape to `rank` dimensions, from the beginning.
+    pub fn unsqueeze(self, rank: usize) -> Self {
+        let old_rank = self.rank();
+        assert!(old_rank <= rank, "Shape has old rank {old_rank}, cannot unsqueeze to rank {rank}");
+
+        let mut dims = vec![1; rank];
+        dims[rank-old_rank..].copy_from_slice(&self.dims);
+
+        Self { dims }
+    }
+
+    /// Unsqueeze the Shape, at the given dimension.
+    pub fn unsqueeze_dim<I: AsIndex>(self, dim: I) -> Self {
+        let rank = self.rank();
+        let mut dims = self.dims;
+        let dim = canonicalize_dim(dim, rank + 1, false);
+        dims.insert(dim, 1);
+
+        Self { dims }
+    }
+
+    /// Squeeze the Shape, at the given dimension.
+    pub fn squeeze_dim<I: AsIndex>(self, dim: I) -> Self {
+        let dim = canonicalize_dim(dim, self.rank(), false);
+        let mut dims = self.dims;
+        assert_eq!(dims[dim], 1, "Cannot squeeze a dimension ({}): {:?}", dim, dims);
+        dims.remove(dim);
+
+        Self { dims }
+    }
+
+    /// Squeeze the Shape, removing all dimensions of size 1.
+    pub fn squeeze(self) -> Self {
+        let dims =
+        self.dims.into_iter().filter(|&d| d != 1).collect::<Vec<_>>().into();
+
+        Self { dims }
     }
 
     /// Returns the number of dimensions.

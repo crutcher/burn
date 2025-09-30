@@ -27,7 +27,7 @@ mod tests {
         // Vector dot product not supported (only 2D matmuls) so unsqueeze for test purposes
         let tensor_4 = tensor_2
             .clone()
-            .unsqueeze_dim::<2>(0)
+            .unsqueeze_dim::<2, _>(0)
             .matmul(tensor_3.unsqueeze_dim(1));
 
         let grads = tensor_4.backward();

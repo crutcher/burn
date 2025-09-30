@@ -660,15 +660,10 @@ where
     /// }
     /// ```
     pub fn squeeze<const D2: usize>(self) -> Tensor<B, D2, K> {
-        let new_dims = self
-            .shape()
-            .dims
-            .iter()
-            .filter_map(|&dim| if dim == 1 { None } else { Some(dim) })
-            .collect::<Vec<_>>();
-        check!(TensorCheck::squeeze_dims_len::<D2>(new_dims.len()));
+        let shape = self.shape().squeeze();
+        check!(TensorCheck::squeeze_dims_len::<D2>(shape.rank()));
 
-        Tensor::new(K::reshape(self.primitive, new_dims.into()))
+        Tensor::new(K::reshape(self.primitive, shape))
     }
 
     /// Squeeze the tensor along the given dimension, removing the specified dimension
@@ -676,7 +671,7 @@ where
     ///
     /// # Arguments
     ///
-    /// - `dim`: The dimension to be squeezed.
+    /// - `dim`: The dimension to be squeezed, supports negative indexing.
     ///
     /// # Type Parameters
     ///
@@ -711,16 +706,9 @@ where
     ///     println!("{squeezed}");
     /// }
     /// ```
-    pub fn squeeze_dim<const D2: usize>(self, dim: usize) -> Tensor<B, D2, K> {
-        check!(TensorCheck::squeeze::<D2>(dim, &self.shape().dims));
-
-        let current_dims = self.shape().dims;
-        let mut new_dims: [usize; D2] = [0; D2];
-
-        new_dims[..dim].copy_from_slice(&current_dims[..dim]);
-        new_dims[dim..].copy_from_slice(&current_dims[dim + 1..]);
-
-        Tensor::new(K::reshape(self.primitive, new_dims.into()))
+    pub fn squeeze_dim<const D2: usize, I: AsIndex>(self, dim: I) -> Tensor<B, D2, K> {
+        let shape = self.shape().squeeze_dim(dim);
+        Tensor::new(K::reshape(self.primitive, shape))
     }
 
     /// Removes specified dimensions of size 1 from a tensor's shape. This function takes a tensor and
@@ -732,7 +720,7 @@ where
     ///
     /// # Arguments
     ///
-    /// - `dims`: The dimension(s) to be squeezed.
+    /// - `dims`: The dimension(s) to be squeezed, supports negative indexing.
     ///
     /// # Type Parameters
     ///
@@ -760,7 +748,7 @@ where
     ///     println!("{squeezed}");
     /// }
     /// ```
-    pub fn squeeze_dims<const D2: usize>(self, dims: &[isize]) -> Tensor<B, D2, K> {
+    pub fn squeeze_dims<const D2: usize, I: AsIndex>(self, dims: &[I]) -> Tensor<B, D2, K> {
         let current_dims = self.shape().dims;
         let mut dim_indices: Vec<usize>;
 
@@ -775,13 +763,7 @@ where
             // If negative dims, count from the back
             dim_indices = dims
                 .iter()
-                .map(|&d| {
-                    if d < 0 {
-                        (current_dims.len() as isize + d) as usize
-                    } else {
-                        d as usize
-                    }
-                })
+                .map(|&d| canonicalize_dim(d, D, false))
                 .collect();
         }
 
@@ -844,14 +826,7 @@ where
     /// ```
     pub fn unsqueeze<const D2: usize>(self) -> Tensor<B, D2, K> {
         check!(TensorCheck::unsqueeze::<D, D2>());
-
-        let mut dims = [1; D2];
-        let num_ones = D2 - D;
-        let shape = self.shape();
-
-        dims[num_ones..(D + num_ones)].copy_from_slice(&shape.dims[..D]);
-
-        let shape = Shape::new(dims);
+        let shape = self.shape().unsqueeze(D2);
         self.reshape(shape)
     }
 
@@ -873,22 +848,11 @@ where
     ///     println!("{unsqueezed}");
     /// }
     /// ```
-    pub fn unsqueeze_dim<const D2: usize>(self, dim: usize) -> Tensor<B, D2, K> {
+    pub fn unsqueeze_dim<const D2: usize, I: AsIndex>(self, dim: I) -> Tensor<B, D2, K> {
+        let dim = canonicalize_dim(dim, D2, false);
         check!(TensorCheck::unsqueeze_dim::<D, D2>(dim));
 
-        let mut dims = [1; D2];
-        let shape = self.shape();
-
-        dims[0..dim].copy_from_slice(&shape.dims[0..dim]);
-
-        if dim < D {
-            dims[dim] = 1;
-            dims[(dim + 1)..].copy_from_slice(&shape.dims[dim..]);
-        } else {
-            dims[dim] = 1;
-        }
-
-        let shape = Shape::new(dims);
+        let shape = self.shape().unsqueeze_dim(dim);
         self.reshape(shape)
     }
 

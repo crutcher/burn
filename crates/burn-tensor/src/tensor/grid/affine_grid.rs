@@ -41,8 +41,8 @@ pub fn affine_grid_2d<B: Backend>(transform: Tensor<B, 3>, dims: [usize; 4]) -> 
         .sub_scalar((1_f32).elem::<f32>());
 
     // Broadcast to batch dimension
-    let x = x.unsqueeze_dim::<3>(0).expand([batch_size, height, width]); // [B, H, W]
-    let y = y.unsqueeze_dim::<3>(0).expand([batch_size, height, width]); // [B, H, W]
+    let x = x.unsqueeze_dim::<3, _>(0).expand([batch_size, height, width]); // [B, H, W]
+    let y = y.unsqueeze_dim::<3, _>(0).expand([batch_size, height, width]); // [B, H, W]
 
     // Apply affine transform
     let a_11 = transform.clone().slice(s![.., 0, 0]);

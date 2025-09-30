@@ -25,7 +25,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 0..3, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             )
             .slice_assign(
                 s![.., 1, .., ..],
@@ -33,7 +33,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 2..5, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             );
 
         actual.to_data().assert_eq(&expected.to_data(), true);
@@ -58,7 +58,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 0..3, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             )
             .slice_assign(
                 s![.., 1, .., ..],
@@ -66,7 +66,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 2..5, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             );
 
         actual.to_data().assert_eq(&expected.to_data(), true);
@@ -92,7 +92,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 0..3, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             )
             .slice_assign(
                 s![.., 1, .., ..],
@@ -100,7 +100,7 @@ mod tests {
                     .clone()
                     .slice(s![.., 2..5, ..])
                     .swap_dims(1, 2)
-                    .unsqueeze_dim::<4>(1),
+                    .unsqueeze_dim::<4, _>(1),
             );
 
         actual.to_data().assert_eq(&expected.to_data(), true);
