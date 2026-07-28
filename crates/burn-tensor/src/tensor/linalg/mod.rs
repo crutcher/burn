@@ -6,7 +6,9 @@ mod matvec;
 mod outer;
 mod trace;
 mod vector_norm;
+mod multi_dot;
 
+pub use multi_dot::*;
 pub use cosine_similarity::*;
 pub use det::*;
 pub use diag::*;
