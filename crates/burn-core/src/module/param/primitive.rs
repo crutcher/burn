@@ -13,6 +13,7 @@ where
     T: Module + Debug + Send + Clone,
 {
     fn visit<V: ModuleVisitor>(&self, visitor: &mut V) {
+        visitor.visit_module(self);
         if let Some(module) = self {
             module.visit(visitor)
         }
@@ -77,6 +78,7 @@ where
     }
 
     fn visit<V: ModuleVisitor>(&self, visitor: &mut V) {
+        visitor.visit_module(self);
         for (i, module) in self.iter().enumerate() {
             let index_str = alloc::format!("{}", i);
             visitor.enter_module(&index_str, "Vec");
@@ -170,6 +172,7 @@ where
     }
 
     fn visit<V: ModuleVisitor>(&self, visitor: &mut V) {
+        visitor.visit_module(self);
         for (i, module) in self.iter().enumerate() {
             let index_str = alloc::format!("{}", i);
             visitor.enter_module(&index_str, "Array");
@@ -256,6 +259,7 @@ macro_rules! impl_module_tuple {
             }
 
             fn visit<V: ModuleVisitor>(&self, visitor: &mut V) {
+                visitor.visit_module(self);
                 $(
                     let index_str = $i.to_string();
                     visitor.enter_module(&index_str, "Tuple");

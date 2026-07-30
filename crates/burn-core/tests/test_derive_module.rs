@@ -87,7 +87,7 @@ pub enum PaddingConfig {
 }
 
 #[derive(Module, Debug)]
-pub struct ModuleWithAttributes<M: Module, N> {
+pub struct ModuleWithAttributes<M: Module, N: 'static> {
     /// A normal parameter.
     weight: Param<Tensor<2>>,
     /// A nested module.

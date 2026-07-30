@@ -39,7 +39,7 @@ impl ModuleCodegen for StructModuleCodegen {
     fn gen_visit(&self) -> TokenStream {
         let struct_name = self.name.to_string();
         let container_type = format!("Struct:{}", struct_name);
-        let body = self.gen_fields_fn(|name, field_type| {
+        let field_body = self.gen_fields_fn(|name, field_type| {
             if field_type.is_parameter_module() || field_type.maybe_generic_module() {
                 let name_str = name.to_string();
                 quote! {
@@ -54,7 +54,8 @@ impl ModuleCodegen for StructModuleCodegen {
 
         quote! {
             fn visit<Visitor: burn::module::ModuleVisitor>(&self, visitor: &mut Visitor) {
-                #body
+                visitor.visit_module(self);
+                #field_body
             }
         }
     }

@@ -98,8 +98,10 @@ impl burn::module::ModuleDisplayDefault for str {
 }
 
 // TODO: tensor record should persist
-impl<const D: usize, K: Basic> Module for Tensor<D, K> {
-    fn visit<V: ModuleVisitor>(&self, _visitor: &mut V) {}
+impl<const D: usize, K: Basic + 'static> Module for Tensor<D, K> {
+    fn visit<V: ModuleVisitor>(&self, _visitor: &mut V) {
+        _visitor.visit_module(self)
+    }
 
     fn map<M: ModuleMapper>(self, _mapper: &mut M) -> Self {
         self
@@ -133,7 +135,7 @@ impl<const D: usize, K: Basic> ModuleDisplayDefault for Tensor<D, K> {
 
 impl<const D: usize, K: Basic> ModuleDisplay for Tensor<D, K> {}
 
-impl<const D: usize, K: Autodiff> AutodiffModule for Tensor<D, K> {
+impl<const D: usize, K: Autodiff + 'static> AutodiffModule for Tensor<D, K> {
     fn valid(&self) -> Self {
         self.clone().inner()
     }
@@ -205,7 +207,7 @@ pub struct Ignored<T>(pub T);
 #[allow(deprecated)]
 impl<T> Module for Ignored<T>
 where
-    T: Sync + Send + core::fmt::Debug + Clone,
+    T: 'static + Sync + Send + core::fmt::Debug + Clone,
 {
     fn visit<V: ModuleVisitor>(&self, _visitor: &mut V) {
         // Nothing to do
@@ -255,7 +257,7 @@ where
 #[allow(deprecated)]
 impl<T> AutodiffModule for Ignored<T>
 where
-    T: Sync + Send + core::fmt::Debug + Clone,
+    T: 'static + Sync + Send + core::fmt::Debug + Clone,
 {
     fn valid(&self) -> Self {
         self.clone()
@@ -287,7 +289,7 @@ mod tests {
     #[test]
     fn empty_module_with_phantom() {
         #[derive(Module, Debug, new)]
-        struct EmptyModule<T: core::fmt::Debug + Clone + Send> {
+        struct EmptyModule<T: 'static + core::fmt::Debug + Clone + Send> {
             #[module(skip)]
             _phantom: PhantomData<T>,
         }

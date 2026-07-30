@@ -43,6 +43,7 @@ impl ModuleCodegen for EnumModuleCodegen {
 
         quote! {
             fn visit<Visitor: burn::module::ModuleVisitor>(&self, visitor: &mut Visitor) {
+                visitor.visit_module(self);
                 #match_body
             }
         }

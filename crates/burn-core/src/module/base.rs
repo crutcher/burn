@@ -7,6 +7,7 @@ use alloc::{
 };
 pub use burn_derive::Module;
 use burn_tensor::{Bool, Device, Int, Tensor};
+use core::any::Any;
 
 /// Type alias to `Vec<Device>` which supports `no_std` environments, but automatically using
 /// the `alloc` crate.
@@ -101,7 +102,7 @@ macro_rules! module {
 ///   my_other_field: usize,
 /// }
 /// ```
-pub trait Module: Clone + Send + core::fmt::Debug {
+pub trait Module: Any + Clone + Send + core::fmt::Debug {
     /// Return all the devices found in the underneath module tree added to the given vector
     /// without duplicates.
     fn collect_devices(&self, devices: Devices) -> Devices;
@@ -321,8 +322,37 @@ pub trait Module: Clone + Send + core::fmt::Debug {
     }
 }
 
+/// Dynamic Module Reference Helper Trait.
+pub trait AnyModule: Any {}
+impl<T: Module + Any> AnyModule for T {}
+
+impl dyn AnyModule {
+    /// Returns some reference to the inner value if it is of type `T`, or
+    /// `None` if it isn't.
+    ///
+    /// See: [`Any`]'s `downcast_ref` method.
+    pub fn downcast_ref<T: Module + Any>(&self) -> Option<&T> {
+        (self as &dyn Any).downcast_ref::<T>()
+    }
+
+    /// Returns `true` if the inner type is the same as `T`.
+    ///
+    /// See: [`Any`]'s `is` method.
+    pub fn is<T: Module + Any>(&self) -> bool {
+        (self as &dyn Any).is::<T>()
+    }
+}
+
 /// Module visitor trait for traversing and inspecting module parameters.
 pub trait ModuleVisitor {
+    /// Visit a module directly.
+    ///
+    /// Visitation is depth-first.
+    /// The base impl is a no-op; the other visitation methods
+    /// are independent of this method.
+    #[allow(unused_variables)]
+    fn visit_module(&mut self, module: &dyn AnyModule) {}
+
     /// Visit a float parameter in the module.
     ///
     /// # Parameters
@@ -506,7 +536,7 @@ pub trait ModuleMapper {
 }
 
 /// Module with auto-differentiation backend.
-pub trait AutodiffModule: Module + Send + core::fmt::Debug {
+pub trait AutodiffModule: Module + 'static + Send + core::fmt::Debug {
     /// Returns the same module, but on the inner backend without auto-differentiation.
     fn valid(&self) -> Self;
 
