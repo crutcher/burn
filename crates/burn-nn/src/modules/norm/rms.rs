@@ -1,5 +1,3 @@
-use burn::tensor::DType;
-
 use burn_core as burn;
 
 use burn::config::Config;
@@ -9,12 +7,18 @@ use burn::module::Param;
 use burn::module::{Content, DisplaySettings, ModuleDisplay};
 use burn::tensor::Device;
 use burn::tensor::Tensor;
+use burn_core::tensor::linalg::RmsNormOptions;
 
 /// Configuration to create a [RMS Norm](RmsNorm) layer using the [init function](RmsNormConfig::init).
 #[derive(Config, Debug)]
 pub struct RmsNormConfig {
     /// The size of the input features.
     pub d_model: usize,
+
+    /// Whether to enable gamma parameter. Default: true
+    #[config(default = true)]
+    pub enable_gamma: bool,
+
     /// A value required for numerical stability. Default: 1e-5
     #[config(default = 1e-5)]
     pub epsilon: f64,
@@ -29,7 +33,11 @@ impl RmsNormConfig {
     pub fn init(&self, device: &Device) -> RmsNorm {
         assert!(self.epsilon > 0.0, "epsilon must be positive.");
 
-        let gamma = Initializer::Ones.init([self.d_model], device);
+        let gamma = if self.enable_gamma {
+            Some(Initializer::Ones.init([self.d_model], device))
+        } else {
+            None
+        };
 
         RmsNorm {
             gamma,
@@ -54,7 +62,8 @@ impl RmsNormConfig {
 #[module(custom_display)]
 pub struct RmsNorm {
     /// The learnable parameter to scale the normalized tensor
-    pub gamma: Param<Tensor<1>>,
+    pub gamma: Option<Param<Tensor<1>>>,
+
     /// A value required for numerical stability
     pub epsilon: f64,
 }
@@ -69,10 +78,13 @@ impl RmsNorm {
     /// - input: `[..., any, d_model]`
     /// - output: `[..., any, d_model]`
     pub fn forward<const D: usize>(&self, x: Tensor<D>) -> Tensor<D> {
-        // Calculate the root-mean-square norm of the input tensor along the last dimension
-        let dtype = x.dtype();
-        let rms = (x.clone().cast(DType::F32).square().mean_dim(D - 1) + self.epsilon).sqrt();
-        (x / rms.cast(dtype)) * self.gamma.val().unsqueeze()
+        let options = RmsNormOptions::default().with_eps(self.epsilon);
+        let x = options.rms_norm(x);
+        if let Some(gamma) = &self.gamma {
+            x * gamma.val().unsqueeze()
+        } else {
+            x
+        }
     }
 }
 
@@ -84,11 +96,14 @@ impl ModuleDisplay for RmsNorm {
     }
 
     fn custom_content(&self, content: Content) -> Option<Content> {
-        let [d_model] = self.gamma.shape().dims();
-        content
-            .add("d_model", &d_model)
-            .add("epsilon", &self.epsilon)
-            .optional()
+        if let Some(gamma) = &self.gamma {
+            let [d_model] = gamma.shape().dims();
+            content.add("d_model", &d_model)
+        } else {
+            content
+        }
+        .add("epsilon", &self.epsilon)
+        .optional()
     }
 }
 

@@ -219,7 +219,10 @@ impl Normalization {
             Normalization::Group(norm) => norm.num_channels,
             Normalization::Instance(norm) => norm.num_channels,
             Normalization::Layer(norm) => norm.gamma.shape()[0],
-            Normalization::Rms(norm) => norm.gamma.shape()[0],
+            Normalization::Rms(norm) => norm
+                .gamma
+                .as_ref()
+                .map_or_else(|| 0, |g| g.val().shape()[0]),
         }
     }
 }
